@@ -47,7 +47,9 @@ class CosyVoice:
         #     model_input = self.frontend.frontend_zero_shot(i, prompt_text, prompt_speech_16k, self.sample_rate)
         #     initial_model_input = torch.save(model_input,'initial_model_input.pt')
         #     print('saved_model_input.pt')
+        time1 = time.time()
         model_input = torch.load('initial_model_input.pt')
+        print('load pt cost: ',time.time()-time1)
         start_time = time.time()
         counter = 0
         logging.info('synthesis text {}'.format(tts_text))
@@ -136,6 +138,7 @@ class CosyVoice2Model:
         for i in self.llm_job(text, prompt_text, llm_prompt_speech_token, llm_embedding, this_uuid):
             yield i
     def llm_job(self,text,prompt_text,llm_prompt_speech_token,llm_embedding,uuid):
+        print('llm_job: 当前用的显卡！！',self.device)
         for i in self.llm.inference(text=text.to(self.device),
                                     text_len=torch.tensor([text.shape[1]], dtype=torch.int32).to(self.device),
                                     prompt_text=prompt_text.to(self.device),
