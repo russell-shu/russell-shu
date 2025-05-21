@@ -10,7 +10,7 @@ from hyperpyyaml import load_hyperpyyaml
 from modelscope import snapshot_download
 from tqdm import tqdm
 
-from cosyvoice.cli.frontend import CosyVoiceFrontEnd
+# from cosyvoice.cli.frontend import CosyVoiceFrontEnd
 from cosyvoice.utils.class_utils import get_model_type
 from cosyvoice.utils.file_utils import logging, load_wav
 
@@ -26,12 +26,12 @@ class CosyVoice:
         with open('{}/cosyvoice.yaml'.format(model_dir), 'r') as f:
             configs = load_hyperpyyaml(f)
         assert get_model_type(configs) != CosyVoice2Model, 'do not use {} for CosyVoice initialization!'.format(model_dir)
-        self.frontend = CosyVoiceFrontEnd(configs['get_tokenizer'],
-                                          configs['feat_extractor'],
-                                          '{}/campplus.onnx'.format(model_dir),
-                                          '{}/speech_tokenizer_v1.onnx'.format(model_dir),
-                                          '{}/spk2info.pt'.format(model_dir),
-                                          configs['allowed_special'])
+        # self.frontend = CosyVoiceFrontEnd(configs['get_tokenizer'],
+        #                                   configs['feat_extractor'],
+        #                                   '{}/campplus.onnx'.format(model_dir),
+        #                                   '{}/speech_tokenizer_v1.onnx'.format(model_dir),
+        #                                   '{}/spk2info.pt'.format(model_dir),
+        #                                   configs['allowed_special'])
         self.sample_rate = configs['sample_rate']
         if torch.cuda.is_available() is False and (load_jit is True or load_trt is True or fp16 is True):
             load_jit, load_trt, fp16 = False, False, False
@@ -40,25 +40,25 @@ class CosyVoice:
         self.model.load('{}/llm.pt'.format(model_dir))
         del configs
     def inference_zero_shot(self, tts_text, prompt_text, prompt_speech_16k, stream=False, speed=1.0, text_frontend=True):
-        prompt_text = self.frontend.text_normalize(prompt_text, split=False, text_frontend=text_frontend)
-        for i in tqdm(self.frontend.text_normalize(tts_text, split=True, text_frontend=text_frontend)):
-            if (not isinstance(i, Generator)) and len(i) < 0.5 * len(prompt_text):
-                logging.warning('synthesis text {} too short than prompt text {}, this may lead to bad performance'.format(i, prompt_text))
-            model_input = self.frontend.frontend_zero_shot(i, prompt_text, prompt_speech_16k, self.sample_rate)
-            initial_model_input = torch.save(model_input,'initial_model_input.pt')
-            print('saved_model_input.pt')
-            # loaded_model_input = torch.load('saved_model_input.pt')
-            start_time = time.time()
-            counter = 0
-            logging.info('synthesis text {}'.format(i))
-            for model_output in self.model.tts(**model_input):
-                # speech_len = model_output['tts_speech'].shape[1] / self.sample_rate
-                # logging.info('yield speech len {}, rtf {}'.format(speech_len, (time.time() - start_time) / speech_len))
-                yield model_output
-                counter+=1
-                if counter % 15 == 0:
-                    print('耗时',time.time()-start_time)
-                    start_time = time.time()
+        # prompt_text = self.frontend.text_normalize(prompt_text, split=False, text_frontend=text_frontend)
+        # for i in tqdm(self.frontend.text_normalize(tts_text, split=True, text_frontend=text_frontend)):
+        #     if (not isinstance(i, Generator)) and len(i) < 0.5 * len(prompt_text):
+        #         logging.warning('synthesis text {} too short than prompt text {}, this may lead to bad performance'.format(i, prompt_text))
+        #     model_input = self.frontend.frontend_zero_shot(i, prompt_text, prompt_speech_16k, self.sample_rate)
+        #     initial_model_input = torch.save(model_input,'initial_model_input.pt')
+        #     print('saved_model_input.pt')
+        model_input = torch.load('initial_model_input.pt')
+        start_time = time.time()
+        counter = 0
+        logging.info('synthesis text {}'.format(tts_text))
+        for model_output in self.model.tts(**model_input):
+            # speech_len = model_output['tts_speech'].shape[1] / self.sample_rate
+            # logging.info('yield speech len {}, rtf {}'.format(speech_len, (time.time() - start_time) / speech_len))
+            yield model_output
+            counter+=1
+            if counter % 15 == 0:
+                print('耗时',time.time()-start_time)
+                start_time = time.time()
 
 class CosyVoice2(CosyVoice):
 
@@ -71,12 +71,12 @@ class CosyVoice2(CosyVoice):
         with open('{}/cosyvoice.yaml'.format(model_dir), 'r') as f:
             configs = load_hyperpyyaml(f, overrides={'qwen_pretrain_path': os.path.join(model_dir, 'CosyVoice-BlankEN')})
         # assert get_model_type(configs) == CosyVoice2Model, 'do not use {} for CosyVoice2 initialization!'.format(model_dir)
-        self.frontend = CosyVoiceFrontEnd(configs['get_tokenizer'],
-                                          configs['feat_extractor'],
-                                          '{}/campplus.onnx'.format(model_dir),
-                                          '{}/speech_tokenizer_v2.onnx'.format(model_dir),
-                                          '{}/spk2info.pt'.format(model_dir),
-                                          configs['allowed_special'])
+        # self.frontend = CosyVoiceFrontEnd(configs['get_tokenizer'],
+        #                                   configs['feat_extractor'],
+        #                                   '{}/campplus.onnx'.format(model_dir),
+        #                                   '{}/speech_tokenizer_v2.onnx'.format(model_dir),
+        #                                   '{}/spk2info.pt'.format(model_dir),
+        #                                   configs['allowed_special'])
         self.sample_rate = configs['sample_rate']
         if torch.cuda.is_available() is False and (load_jit is True or load_trt is True or fp16 is True):
             load_jit, load_trt, fp16 = False, False, False
