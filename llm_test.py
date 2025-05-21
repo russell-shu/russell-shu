@@ -40,6 +40,7 @@ class CosyVoice:
         self.model.load('{}/llm.pt'.format(model_dir))
         del configs
     def inference_zero_shot(self, tts_text, prompt_text, prompt_speech_16k, stream=False, speed=1.0, text_frontend=True):
+        time_prepare_1 = time.time()
         prompt_text = self.frontend.text_normalize(prompt_text, split=False, text_frontend=text_frontend)
         for i in tqdm(self.frontend.text_normalize(tts_text, split=True, text_frontend=text_frontend)):
             if (not isinstance(i, Generator)) and len(i) < 0.5 * len(prompt_text):
@@ -48,6 +49,8 @@ class CosyVoice:
             start_time = time.time()
             counter = 0
             logging.info('synthesis text {}'.format(i))
+            print('prepare model input cost: ',time.time()-time_prepare_1)
+            # time_prepare_1 = time.time()
             for model_output in self.model.tts(**model_input):
                 # speech_len = model_output['tts_speech'].shape[1] / self.sample_rate
                 # logging.info('yield speech len {}, rtf {}'.format(speech_len, (time.time() - start_time) / speech_len))
@@ -56,7 +59,7 @@ class CosyVoice:
                 if counter % 15 == 0:
                     print('耗时',time.time()-start_time)
                     start_time = time.time()
-
+            time_prepare_1 = time.time()
 class CosyVoice2(CosyVoice):
 
     def __init__(self, model_dir, load_jit=False, load_trt=False, fp16=False):
@@ -141,12 +144,12 @@ class CosyVoice2Model:
                                     prompt_speech_token_len=torch.tensor([llm_prompt_speech_token.shape[1]],
                                                                          dtype=torch.int32).to(self.device),
                                     embedding=llm_embedding.to(self.device)):
-            print(i)
+            # print(i)
             yield i
 
 
 cosyvoice = CosyVoice2('pretrained_models/CosyVoice2-0.5B', load_jit=True, load_trt=True, fp16=True)
-text = '为啥我这个没有捕获到'
+text = '为啥我这个没有捕获到.嗨，我是通义灵码，你的智能编码助手。你可以问我编码相关的问题或提交反馈让我变得更好。如果需要了解更多我的能力、动态及企业版信息，可以前往查看帮助文档。更详细的诉求描述和更多的上下文（如文件、图片、提交等），可以让我更加理解你的诉求，并给出更好的方案和代码建议。同时，智能体模式时，我可以使用很多工具来解决复杂的编码任务，你也可以为我添加更多贴合你工作流程的 MCP 工具。装环境需要那边提供服务器的硬件型号，你那边有负责提供硬件的人能问到吗？顺利的话两三天能把昇腾提供的Cosyvoice的demo跑起来，然后再花个三四天基于这个demo开发服务接入咱们系统'
 prompt_text = '你好，你好啊我是智能客服灵犀,能查话费,流量,账单,套餐,有啥问题都可以问我。'
 prompt_speech_16k = load_wav('./asset/xiaolv_fast_v2.wav', 16000)
 for i in cosyvoice.inference_zero_shot(text, prompt_text,prompt_speech_16k, stream=False):
