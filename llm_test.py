@@ -45,6 +45,9 @@ class CosyVoice:
             if (not isinstance(i, Generator)) and len(i) < 0.5 * len(prompt_text):
                 logging.warning('synthesis text {} too short than prompt text {}, this may lead to bad performance'.format(i, prompt_text))
             model_input = self.frontend.frontend_zero_shot(i, prompt_text, prompt_speech_16k, self.sample_rate)
+            initial_model_input = torch.save(model_input,'initial_model_input.pt')
+            print('saved_model_input.pt')
+            # loaded_model_input = torch.load('saved_model_input.pt')
             start_time = time.time()
             counter = 0
             logging.info('synthesis text {}'.format(i))
